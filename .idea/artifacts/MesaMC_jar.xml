@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="MesaMC:jar">
+    <output-path>$USER_HOME$/Documents/mesamc-test/plugins</output-path>
+    <root id="archive" name="MesaMC.jar">
+      <element id="module-output" name="MesaMC" />
+      <element id="module-source" name="MesaMC" />
+    </root>
+  </artifact>
+</component>

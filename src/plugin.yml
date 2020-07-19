@@ -1,0 +1,26 @@
+name: MesaMC
+version: 1.0.0
+author: tyler58546
+main: com.tyler58546.MesaMC.MesaMC
+api-version: 1.14
+commands:
+  play:
+    description: Play a game
+    usage: |
+      USAGE: /<command> <game>
+  start:
+    description: Start a game
+    usage: |
+      USAGE: /<command>
+  leave:
+    description: Leave a game
+    usage: |
+      USAGE: /<command>
+    aliases:
+      - l
+      - lobby
+      - hub
+  map:
+    description: Manage maps.
+    usage: |
+      USAGE: /<command> create <id>|edit <id>|save|setauthor <author>|setname <name>|setgame <game>|publish|unpublish
