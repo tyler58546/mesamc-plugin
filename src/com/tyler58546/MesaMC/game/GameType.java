@@ -26,6 +26,16 @@ public enum GameType {
                 Statistic.LOSSES,
                 Statistic.DAMAGE_DEALT,
                 Statistic.DAMAGE_TAKEN
+    }),
+    SKYWARS (
+            "Duels",
+            "Duels",
+            new Statistic[]{
+                Statistic.GAMES_PLAYED,
+                Statistic.WINS,
+                Statistic.LOSSES,
+                Statistic.DAMAGE_DEALT,
+                Statistic.DAMAGE_TAKEN
     })
     ;
 
