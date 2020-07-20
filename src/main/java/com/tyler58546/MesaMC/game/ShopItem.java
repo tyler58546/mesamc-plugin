@@ -1,6 +1,6 @@
 package com.tyler58546.MesaMC.game;
 
-import com.sun.istack.internal.NotNull;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,7 +15,7 @@ public class ShopItem extends ItemStack {
     public int slot;
     public Boolean allowMultiple;
     protected Player player;
-    public ShopItem(int slot, @NotNull Material type, String customName, int amount, ItemStack price, String currencyName, Boolean allowMultiple) {
+    public ShopItem(int slot, Material type, String customName, int amount, ItemStack price, String currencyName, Boolean allowMultiple) {
         super(type, amount);
         this.slot = slot;
         this.currencyName = currencyName;
