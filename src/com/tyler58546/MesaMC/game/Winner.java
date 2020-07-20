@@ -12,4 +12,5 @@ public class Winner {
     public Winner(Team team) {
         this.team = team;
     }
+    public Winner() {}
 }

@@ -30,19 +30,7 @@ public class GameCommands implements CommandExecutor, TabCompleter {
         return null;
     }
 
-    /**
-     * Gets a players current game.
-     * @param player
-     * @return The game the player is in, or null of they are not in a game.
-     */
-    Game getCurrentGame(Player player) {
-        for (Game g : main.games) {
-            if (g.players.contains(player)) {
-                return g;
-            }
-        }
-        return null;
-    }
+
 
     public GameCommands(MesaMC mainClass) {
         this.main = mainClass;
@@ -74,11 +62,16 @@ public class GameCommands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(prefixedMessage("Game not found."));
                 return true;
             }
-            if (game == getCurrentGame(player)) {
+            if (game == main.getCurrentGame(player)) {
                 sender.sendMessage(prefixedMessage("You are already in this game."));
                 return true;
             }
             if (game.state != Game.gameState.WAITING) {
+                if (game.state == Game.gameState.RUNNING) {
+                    game.addSpectator(player);
+                    sender.sendMessage(prefixedMessage("You are now spectating "+ChatColor.YELLOW+game.name));
+                    return true;
+                }
                 sender.sendMessage(prefixedMessage("This game cannot be joined right now."));
                 return true;
             }
@@ -91,7 +84,7 @@ public class GameCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (command.getName().equalsIgnoreCase("start")) {
-            Game currentGame = getCurrentGame(player);
+            Game currentGame = main.getCurrentGame(player);
             if (currentGame != null) {
                 if (currentGame.state == Game.gameState.WAITING) {
                     if (currentGame.players.size() >= currentGame.minPlayers) {
@@ -113,7 +106,7 @@ public class GameCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (command.getName().equalsIgnoreCase("leave")) {
-            Game currentGame = getCurrentGame(player);
+            Game currentGame = main.getCurrentGame(player);
             if (currentGame != null) {
                 currentGame.removePlayer(player);
             } else {

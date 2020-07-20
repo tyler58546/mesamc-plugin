@@ -10,12 +10,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 
 public class MesaMC extends JavaPlugin {
 
-    public static String mainWorldName = "hthm";
+    public static String mainWorldName = "world";
     public static String serverName = "MesaMC";
 
     public StatisticsManager statisticsManager;
@@ -61,6 +62,12 @@ public class MesaMC extends JavaPlugin {
                 games.add(new Duels1v1(main));
             }
         });
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                updateHidden();
+            }
+        }.runTaskTimer(this, 20, 20);
     }
 
     public void onDisable() {
@@ -74,6 +81,42 @@ public class MesaMC extends JavaPlugin {
             });
             WorldLoader.unloadWorld(map.world);
         });
+    }
+
+    public void updateHidden() {
+        Bukkit.getServer().getOnlinePlayers().forEach(p1 -> {
+            Bukkit.getServer().getOnlinePlayers().forEach(p2 -> {
+                if (p1 != p2) {
+                    if (shouldBeHidden(p1, p2)) {
+                        p2.hidePlayer(this, p1);
+                    } else {
+                        p2.showPlayer(this, p1);
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Gets a players current game.
+     * @param player
+     * @return The game the player is in, or null of they are not in a game.
+     */
+    public Game getCurrentGame(Player player) {
+        for (Game g : games) {
+            if (g.players.contains(player)) {
+                return g;
+            }
+        }
+        return null;
+    }
+
+    Boolean shouldBeHidden(Player p, Player from) {
+        if (getCurrentGame(from) == null) return false;
+        if (getCurrentGame(from) != getCurrentGame(p)) return true;
+        if (getCurrentGame(from).spectators.contains(from)) return false;
+        if (getCurrentGame(from).spectators.contains(p)) return true;
+        return false;
     }
 
     public void executeCommandAsPlayer(Player player, String cmd) {

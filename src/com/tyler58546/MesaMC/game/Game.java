@@ -12,11 +12,10 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
@@ -26,6 +25,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,17 +45,17 @@ public abstract class Game implements Listener {
     public GameMap gameMap;
     public GameMap lobbyMap;
     public Location lobbySpawn;
-    public ArrayList<Player> players = new ArrayList<Player>();
-    public Player[] spectators;
+    public List<Player> players = new ArrayList<>();
+    public List<Player> spectators = new ArrayList<>();
     public Integer minPlayers = 2;
     public Integer maxPlayers = 16;
     public Integer respawnDelay = 5;
     protected abstract Boolean canRespawn(Player player);
     public boolean enableStats = true;
     public Winner winner;
-    public HashMap<String, Entity> npcs = new HashMap<String, Entity>();
-    public List<Location> playerPlacedBlocks = new ArrayList<Location>();
-    public ArrayList<String> description = new ArrayList<String>();
+    public HashMap<String, Entity> npcs = new HashMap<>();
+    public List<Location> playerPlacedBlocks = new ArrayList<>();
+    public ArrayList<String> description = new ArrayList<>();
     public enum gameState {
         WAITING,
         STARTING,
@@ -130,6 +130,7 @@ public abstract class Game implements Listener {
      * @param player
      */
     public void addPlayer(Player player) {
+        if (players.contains(player)) return;
         if (state != gameState.WAITING) {
             return;
         }
@@ -141,6 +142,14 @@ public abstract class Game implements Listener {
         updateScoreboard();
     }
 
+    public List<Player> getNonSpectators() {
+        List<Player> output = new ArrayList<>();
+        players.forEach(p -> {
+            if (!spectators.contains(p)) output.add(p);
+        });
+        return output;
+    }
+
     /**
      * Removes a player from the game.
      * @param player
@@ -149,23 +158,40 @@ public abstract class Game implements Listener {
 
         resetPlayer(player);
         players.remove(player);
+        spectators.remove(player);
         removePlayerFromWorld(player, false);
         gameBroadcast(ChatColor.DARK_GRAY+"Quit> "+ChatColor.GRAY+player.getName());
-        if (players.size() <= 1 && state == gameState.RUNNING) {
-            if (players.size() == 1) winner = new Winner(players.get(0));
+        if (getNonSpectators().size() <= 1 && state == gameState.RUNNING) {
+            if (getNonSpectators().size() == 1) winner = new Winner(players.get(0));
             stop();
         }
     }
 
     void addSpectator(Player player) {
-
+        if (spectators.contains(player)) return;
+        if (!players.contains(player)) {
+            players.add(player);
+            gameBroadcast(ChatColor.DARK_GRAY+"Join> "+ChatColor.GRAY+player.getName());
+            updateScoreboard();
+        }
+        spectators.add(player);
+        resetPlayer(player);
+        giveSpectatorItems(player);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));
     }
+
+
+
 
     /**
      * Resets players health, hunger, inventory, and gamemode.
      * @param player
      */
     void resetPlayer(Player player) {
+        player.setFlying(false);
+        player.setAllowFlight(false);
         player.setHealth(20);
         player.setFoodLevel(20);
         player.setSaturation(10);
@@ -174,6 +200,25 @@ public abstract class Game implements Listener {
         player.getInventory().clear();
         if (player.getWorld() == lobbyWorld) player.setGameMode(GameMode.ADVENTURE);
         else player.setGameMode(gameMode);
+    }
+
+    void giveSpectatorItems(Player player) {
+        player.getInventory().clear();
+        ItemMeta im;
+
+        //Tracking compass
+        ItemStack compass = new ItemStack(Material.COMPASS);
+        im = compass.getItemMeta();
+        im.setDisplayName(ChatColor.YELLOW+"Tracking Compass");
+        compass.setItemMeta(im);
+        player.getInventory().setItem(0, compass);
+
+        //Bed
+        ItemStack bedItem = new ItemStack(Material.RED_BED);
+        im = bedItem.getItemMeta();
+        im.setDisplayName(ChatColor.RESET+""+ChatColor.BOLD+"Leave Game");
+        bedItem.setItemMeta(im);
+        player.getInventory().setItem(8, bedItem);
     }
 
     /**
@@ -213,6 +258,8 @@ public abstract class Game implements Listener {
         }
 
         enableStats = (players.size() >= minPlayers);
+
+        spectators = new ArrayList<>();
 
         //Teleport players to the game
         players.forEach((player) -> {
@@ -286,6 +333,7 @@ public abstract class Game implements Listener {
      */
     void removePlayers(Boolean moveToLobby) {
         players.forEach(player -> {
+            spectators.remove(player);
             removePlayerFromWorld(player, moveToLobby);
         });
     }
@@ -295,6 +343,7 @@ public abstract class Game implements Listener {
      */
     public void stop() {
         state = gameState.FINISHED;
+        if (winner == null) winner = new Winner();
         players.forEach(player -> {
             if (winner.player != null) {
                 player.sendTitle(ChatColor.YELLOW+winner.player.getName(), ChatColor.YELLOW+"won the game!", 0, 200, 5);
@@ -315,6 +364,7 @@ public abstract class Game implements Listener {
             loadMap();
             Bukkit.getServer().getPluginManager().callEvent(new GameResetEvent(this));
             updateScoreboard();
+            spectators = new ArrayList<>();
             return;
         }
         Bukkit.getScheduler().scheduleSyncDelayedTask(main, () -> {
@@ -323,6 +373,7 @@ public abstract class Game implements Listener {
             loadMap();
             Bukkit.getServer().getPluginManager().callEvent(new GameResetEvent(this));
             updateScoreboard();
+            spectators = new ArrayList<>();
         }, 200L);
     }
 
@@ -367,7 +418,7 @@ public abstract class Game implements Listener {
         gameBroadcast(deathMessage);
         resetPlayer(player);
         player.setGameMode(GameMode.SPECTATOR);
-        player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));
+        if (player.getLocation().getY() < 0)  player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));
         Game game = this;
         BukkitRunnable respawnTimer = new BukkitRunnable() {
             int secondsRemaining = respawnDelay;
@@ -399,7 +450,7 @@ public abstract class Game implements Listener {
         //Get closest player
         List<Player> playerLocations = new ArrayList<Player>();
         players.forEach(p -> {
-            if (p.getGameMode() != GameMode.SPECTATOR && p != player) playerLocations.add(p);
+            if (p.getGameMode() != GameMode.SPECTATOR && p != player && !spectators.contains(p)) playerLocations.add(p);
         });
         if (playerLocations.size() == 0) {
             return;
@@ -466,7 +517,7 @@ public abstract class Game implements Listener {
     @EventHandler
     public final void onBreak(BlockBreakEvent e) {
         World world = e.getBlock().getWorld();
-        if (world == lobbyWorld) {
+        if (world == lobbyWorld || spectators.contains(e.getPlayer())) {
             e.setCancelled(true);
         }
         if (world == gameWorld) {
@@ -483,7 +534,7 @@ public abstract class Game implements Listener {
     @EventHandler
     public final void onPlace(BlockPlaceEvent e) {
         World world = e.getBlock().getWorld();
-        if (world == lobbyWorld) {
+        if (world == lobbyWorld || spectators.contains(e.getPlayer())) {
             e.setCancelled(true);
         }
         if (world == gameWorld) {
@@ -514,8 +565,16 @@ public abstract class Game implements Listener {
 
     @EventHandler
     public final void onDamage(EntityDamageEvent e) {
+        if (e.getEntity() instanceof Player) {
+            Player player = (Player) e.getEntity();
+            if (spectators.contains(player)) {
+                e.setCancelled(true);
+                return;
+            }
+        }
         if (e.getEntity().getWorld() == lobbyWorld || (e.getEntity().getWorld() == gameWorld && state != gameState.RUNNING)) {
             e.setCancelled(true);
+            return;
         }
         if (e.getEntity().getWorld() == gameWorld) {
             if (e.getEntity() instanceof Player) {
@@ -548,6 +607,35 @@ public abstract class Game implements Listener {
                 if (e.getDamager() == e.getEntity()) {
                     e.setCancelled(true);
                     return;
+                }
+
+                if (e.getDamager() instanceof Player) {
+                    if (spectators.contains((Player) e.getDamager())) {
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+
+                if (e.getDamager() instanceof Arrow && e.getEntity() instanceof Player) {
+                    Arrow arrow = (Arrow) e.getDamager();
+                    Player player = (Player) e.getEntity();
+                    if (spectators.contains(player)) {
+                        e.setCancelled(true);
+                        GameMode ogGameMode = player.getGameMode();
+                        player.setGameMode(GameMode.SPECTATOR);
+                        Arrow newArrow = gameWorld.spawnArrow(arrow.getLocation(), arrow.getVelocity(), 2f, 0);
+                        newArrow.setBounce(false);
+                        arrow.remove();
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                player.setGameMode(ogGameMode);
+                                player.setAllowFlight(true);
+                                player.setFlying(true);
+                            }
+                        }.runTaskLater(main, 10);
+                        return;
+                    }
                 }
 
 
@@ -629,22 +717,42 @@ public abstract class Game implements Listener {
 
     @EventHandler
     public final void onInteraction(PlayerInteractEvent e) {
-        if (e.getPlayer().getWorld() == lobbyWorld) {
+        Player player = e.getPlayer();
+        if (player.getWorld() == lobbyWorld) {
+            if (e.getAction() == Action.PHYSICAL) return;
             e.setCancelled(true);
-            switch (e.getPlayer().getInventory().getHeldItemSlot()) {
+            switch (player.getInventory().getHeldItemSlot()) {
                 case 7:
-                    Bukkit.getServer().dispatchCommand(e.getPlayer(), "start");
+                    Bukkit.getServer().dispatchCommand(player, "start");
                     break;
                 case 8:
-                    removePlayer(e.getPlayer());
+                    removePlayer(player);
                     break;
+            }
+        }
+        if (spectators.contains(player)) {
+            e.setCancelled(true);
+            if (e.getAction() == Action.PHYSICAL) return;
+            switch (player.getInventory().getHeldItemSlot()) {
+                case 0:
+                    new SpectatorGUI(main, this).open(player);
+                    break;
+                case 8:
+                    removePlayer(player);
+                    return;
             }
         }
     }
 
-    @EventHandler final void onPickup(PlayerAttemptPickupItemEvent e) {
-        if (e.getPlayer().getWorld() == lobbyWorld) {
-            e.setCancelled(true);
+    @EventHandler public final void onPickup(EntityPickupItemEvent e) {
+        if (e.getEntity() instanceof Player) {
+            Player player = (Player) e.getEntity();
+            if (player.getWorld() == lobbyWorld) {
+                e.setCancelled(true);
+            }
+            if (spectators.contains(player)) {
+                e.setCancelled(true);
+            }
         }
     }
 
@@ -655,6 +763,9 @@ public abstract class Game implements Listener {
                 e.setCancelled(true);
             }
             if (e.getWhoClicked().getWorld() == gameWorld && !allowInventoryMove) {
+                e.setCancelled(true);
+            }
+            if (spectators.contains(e.getWhoClicked())) {
                 e.setCancelled(true);
             }
         }
