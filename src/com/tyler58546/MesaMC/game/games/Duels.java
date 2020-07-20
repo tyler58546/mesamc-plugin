@@ -2,6 +2,7 @@ package com.tyler58546.MesaMC.game.games;
 
 import com.tyler58546.MesaMC.MesaMC;
 import com.tyler58546.MesaMC.game.Game;
+import com.tyler58546.MesaMC.game.GameType;
 import com.tyler58546.MesaMC.game.event.GameCombatKillEvent;
 import com.tyler58546.MesaMC.game.event.GameSpawnPlayerEvent;
 import com.tyler58546.MesaMC.game.event.GameStartEvent;
@@ -15,7 +16,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 public abstract class Duels extends Game {
 
     protected Duels(MesaMC main, String id, String name, String[] maps) {
-        super(main, id, name, maps);
+        super(main, id, name, maps, GameType.DUELS);
     }
 
     @Override

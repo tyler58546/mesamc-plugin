@@ -1,5 +1,6 @@
 package com.tyler58546.MesaMC.game;
 
+import com.tyler58546.MesaMC.game.stats.Statistic;
 import net.md_5.bungee.api.ChatMessageType;
 import com.tyler58546.MesaMC.MesaMC;
 import com.tyler58546.MesaMC.WorldLoader;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Represents a minigame.
  */
 public abstract class Game implements Listener {
+    public GameType gameType;
     public String id;
     public String name;
     public String[] maps;
@@ -49,6 +51,7 @@ public abstract class Game implements Listener {
     public Integer maxPlayers = 16;
     public Integer respawnDelay = 5;
     protected abstract Boolean canRespawn(Player player);
+    public boolean enableStats = true;
     public Winner winner;
     public HashMap<String, Entity> npcs = new HashMap<String, Entity>();
     public List<Location> playerPlacedBlocks = new ArrayList<Location>();
@@ -75,12 +78,13 @@ public abstract class Game implements Listener {
         return new Location(gameWorld, 0.5, 4, 0.5, 0, 0);
     }
 
-    protected Game(MesaMC main, String id, String name, String[] maps) {
+    protected Game(MesaMC main, String id, String name, String[] maps, GameType gameType) {
         Bukkit.getServer().getPluginManager().registerEvents(this, main);
         this.main = main;
         this.id = id;
         this.name = name;
         this.maps = maps;
+        this.gameType = gameType;
 
         //Create the lobby world
         Bukkit.getLogger().info("Loading worlds for "+id+"...");
@@ -208,10 +212,13 @@ public abstract class Game implements Listener {
             return;
         }
 
+        enableStats = (players.size() >= minPlayers);
+
         //Teleport players to the game
         players.forEach((player) -> {
             player.teleport(getSpawnpoint(player));
             resetPlayer(player);
+            addStat(Statistic.GAMES_PLAYED, player);
         });
 
         //Start countdown
@@ -291,8 +298,11 @@ public abstract class Game implements Listener {
         players.forEach(player -> {
             if (winner.player != null) {
                 player.sendTitle(ChatColor.YELLOW+winner.player.getName(), ChatColor.YELLOW+"won the game!", 0, 200, 5);
+                if (winner.player == player) addStat(Statistic.WINS, player);
+                else addStat(Statistic.LOSSES, player);
             } else if (winner.team != null) {
                 player.sendTitle(winner.team.displayName+" Team", ChatColor.YELLOW+"won the game!", 0, 200, 5);
+                // TODO add win stats when team wins
             } else {
                 player.sendTitle(ChatColor.RED+"GAME OVER", "", 0, 200, 5);
             }
@@ -353,6 +363,7 @@ public abstract class Game implements Listener {
     }
 
     protected void handleDeath(Player player, String deathMessage) {
+        addStat(Statistic.DEATHS, player);
         gameBroadcast(deathMessage);
         resetPlayer(player);
         player.setGameMode(GameMode.SPECTATOR);
@@ -448,6 +459,10 @@ public abstract class Game implements Listener {
         });
     }
 
+    protected void addStat(Statistic stat, Player player) {
+        if (enableStats) main.statisticsManager.addGameStatistic(gameType, stat, player);
+    }
+
     @EventHandler
     public final void onBreak(BlockBreakEvent e) {
         World world = e.getBlock().getWorld();
@@ -506,6 +521,9 @@ public abstract class Game implements Listener {
             if (e.getEntity() instanceof Player) {
                 Player player = (Player) e.getEntity();
                 if (player.getHealth() - e.getFinalDamage() <= 0) {
+                    for (int i = 0; i < ((int) Math.round(player.getHealth())); i++) {
+                        addStat(Statistic.DAMAGE_TAKEN, player);
+                    }
                     e.setCancelled(true);
                     player.setHealth(20);
                     player.setFoodLevel(20);
@@ -513,6 +531,10 @@ public abstract class Game implements Listener {
                     EntityDamageEvent.DamageCause cause = e.getCause();
                     if (cause != EntityDamageEvent.DamageCause.ENTITY_ATTACK && cause != EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK && cause != EntityDamageEvent.DamageCause.MAGIC && cause != EntityDamageEvent.DamageCause.PROJECTILE) {
                         handleDeath(player, ChatColor.BLUE+"Death> "+ChatColor.YELLOW+player.getName()+ChatColor.GRAY+" killed by "+ChatColor.YELLOW+WordUtils.capitalizeFully(cause.toString()));
+                    }
+                } else {
+                    for (int i = 0; i < ((int) Math.round(e.getFinalDamage())); i++) {
+                        addStat(Statistic.DAMAGE_TAKEN, player);
                     }
                 }
             }
@@ -527,9 +549,8 @@ public abstract class Game implements Listener {
                     e.setCancelled(true);
                     return;
                 }
-                if (!(((Player) e.getEntity()).getHealth() - e.getFinalDamage() <= 0)) {
-                    return;
-                }
+
+
                 AtomicReference<Player> killer = new AtomicReference<Player>();
                 killer.set(null);
                 AtomicReference<String> weapon = new AtomicReference<>("Archery");
@@ -558,6 +579,20 @@ public abstract class Game implements Listener {
                     }
                 }
 
+                Boolean didDie = true;
+                if (!(((Player) e.getEntity()).getHealth() - e.getFinalDamage() <= 0)) {
+                    for (int i = 0; i < (int)Math.round(e.getFinalDamage()); i++) {
+                        addStat(Statistic.DAMAGE_DEALT, killer.get());
+                    }
+                    didDie = false;
+                } else {
+                    for (int i = 0; i < (int)Math.round(((Player) e.getEntity()).getHealth()); i++) {
+                        addStat(Statistic.DAMAGE_DEALT, killer.get());
+                    }
+                }
+
+                if (!didDie) return;
+
                 weapon.set(WordUtils.capitalizeFully(weapon.get()));
                 GameCombatKillEvent killEvent = new GameCombatKillEvent(this, (Player) killer.get(), (Player) e.getEntity(), weapon.get());
 
@@ -565,6 +600,7 @@ public abstract class Game implements Listener {
 
                 if (killer.get() != null) {
                     Bukkit.getServer().getPluginManager().callEvent(killEvent);
+                    addStat(Statistic.KILLS, killEvent.killer);
                     handleDeath(killEvent.killed,ChatColor.BLUE+"Death> "+ChatColor.YELLOW+killEvent.killed.getName()+ChatColor.GRAY+" killed by "+ChatColor.YELLOW+killEvent.killer.getName()+ChatColor.GRAY+ " using "+ChatColor.YELLOW+killEvent.weapon);
                 } else {
                     handleDeath(killEvent.killed,ChatColor.BLUE+"Death> "+ChatColor.YELLOW+killEvent.killed.getName()+ChatColor.GRAY+" killed by "+ChatColor.YELLOW+e.getCause().toString());

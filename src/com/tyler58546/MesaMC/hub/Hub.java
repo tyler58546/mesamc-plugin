@@ -1,6 +1,7 @@
 package com.tyler58546.MesaMC.hub;
 
 import com.tyler58546.MesaMC.MesaMC;
+import com.tyler58546.MesaMC.game.stats.StatsGUI;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -67,7 +68,7 @@ public class Hub implements Listener {
                 break;
             case 7:
                 //Profile
-                player.sendMessage(ChatColor.BLUE+"Stats> "+ChatColor.GRAY+"Coming soon.");
+                new StatsGUI(main, player).open(player);
                 break;
             case 8:
                 //Menu

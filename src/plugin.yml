@@ -24,3 +24,9 @@ commands:
     description: Manage maps.
     usage: |
       USAGE: /<command> create <id>|edit <id>|save|setauthor <author>|setname <name>|setgame <game>|publish|unpublish
+  statistics:
+    description: Shows player statistics
+    usage: |
+      USAGE: /<command>
+    aliases:
+      - stats

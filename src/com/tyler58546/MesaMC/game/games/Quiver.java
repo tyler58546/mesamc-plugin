@@ -3,6 +3,7 @@ package com.tyler58546.MesaMC.game.games;
 import com.tyler58546.MesaMC.MesaMC;
 import com.tyler58546.MesaMC.game.*;
 import com.tyler58546.MesaMC.game.event.*;
+import com.tyler58546.MesaMC.game.stats.Statistic;
 import com.tyler58546.MesaMC.util.Sort;
 import org.bukkit.*;
 import org.bukkit.entity.*;
@@ -36,7 +37,7 @@ public class Quiver extends Game {
 
 
     public Quiver(MesaMC main) {
-        super(main, GameType.QUIVER.id, GameType.QUIVER.name, new String[]{"quiver-floating-island"});
+        super(main, GameType.QUIVER.id, GameType.QUIVER.name, new String[]{"quiver-floating-island"}, GameType.QUIVER);
         description.add("Bows insta-kill.");
         description.add("You get one arrow every time you get a kill.");
         description.add("First to 20 kills wins the game.");
@@ -273,6 +274,10 @@ public class Quiver extends Game {
             Arrow arrow = (Arrow) e.getEntity();
             arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
             arrow.setDamage(100);
+            if (arrow.getShooter() instanceof Player) {
+                Player player = (Player) arrow.getShooter();
+                addStat(Statistic.ARROWS_SHOT, player);
+            }
             if (e.getHitBlock() != null) {
                 if (blockPlacedByPlayer(e.getHitBlock().getLocation())) {
                     if (e.getHitBlock().getType() == Material.RED_WOOL) e.getHitBlock().breakNaturally();
