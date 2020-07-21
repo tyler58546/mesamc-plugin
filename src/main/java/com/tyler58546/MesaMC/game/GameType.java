@@ -28,10 +28,12 @@ public enum GameType {
                 Statistic.DAMAGE_TAKEN
     }),
     SKYWARS (
-            "Duels",
-            "Duels",
+            "Skywars",
+            "Skywars",
             new Statistic[]{
                 Statistic.GAMES_PLAYED,
+                Statistic.KILLS,
+                Statistic.DEATHS,
                 Statistic.WINS,
                 Statistic.LOSSES,
                 Statistic.DAMAGE_DEALT,

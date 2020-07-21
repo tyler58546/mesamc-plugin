@@ -3,6 +3,7 @@ package com.tyler58546.MesaMC;
 import com.tyler58546.MesaMC.game.*;
 import com.tyler58546.MesaMC.game.games.Duels1v1;
 import com.tyler58546.MesaMC.game.games.Quiver;
+import com.tyler58546.MesaMC.game.games.SkywarsSolo;
 import com.tyler58546.MesaMC.game.stats.StatisticsManager;
 import com.tyler58546.MesaMC.game.stats.StatsCommand;
 import com.tyler58546.MesaMC.hub.Hub;
@@ -16,7 +17,7 @@ import java.util.ArrayList;
 
 public class MesaMC extends JavaPlugin {
 
-    public static String mainWorldName = "world";
+    public static String mainWorldName = "hthm";
     public static String serverName = "MesaMC";
 
     public StatisticsManager statisticsManager;
@@ -60,6 +61,9 @@ public class MesaMC extends JavaPlugin {
 
                 //Add duels game
                 games.add(new Duels1v1(main));
+
+                //Add skywars game
+                games.add(new SkywarsSolo(main));
             }
         });
         new BukkitRunnable() {

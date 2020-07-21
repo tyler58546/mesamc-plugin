@@ -1,11 +1,9 @@
 package com.tyler58546.MesaMC.game;
 
 import com.tyler58546.MesaMC.game.stats.Statistic;
-import net.md_5.bungee.api.ChatMessageType;
 import com.tyler58546.MesaMC.MesaMC;
 import com.tyler58546.MesaMC.WorldLoader;
 import com.tyler58546.MesaMC.game.event.*;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.*;
 import org.bukkit.entity.*;
@@ -25,7 +23,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -167,7 +164,7 @@ public abstract class Game implements Listener {
         }
     }
 
-    void addSpectator(Player player) {
+    void addSpectator(Player player, Boolean teleport) {
         if (spectators.contains(player)) return;
         if (!players.contains(player)) {
             players.add(player);
@@ -179,7 +176,7 @@ public abstract class Game implements Listener {
         giveSpectatorItems(player);
         player.setAllowFlight(true);
         player.setFlying(true);
-        player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));
+        if (teleport) player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));
     }
 
 
@@ -420,28 +417,34 @@ public abstract class Game implements Listener {
         player.setGameMode(GameMode.SPECTATOR);
         if (player.getLocation().getY() < 0)  player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));
         Game game = this;
-        BukkitRunnable respawnTimer = new BukkitRunnable() {
-            int secondsRemaining = respawnDelay;
-            @Override
-            public void run() {
-                if (state != gameState.RUNNING) return;
-                if (secondsRemaining <= 0) {
-                    player.setGameMode(game.gameMode);
-                    player.setHealth(20);
-                    player.setFoodLevel(20);
-                    player.setSaturation(10);
+        if (canRespawn(player)) {
+            BukkitRunnable respawnTimer = new BukkitRunnable() {
+                int secondsRemaining = respawnDelay;
+                @Override
+                public void run() {
+                    if (state != gameState.RUNNING) return;
+                    if (secondsRemaining <= 0) {
+                        player.setGameMode(game.gameMode);
+                        player.setHealth(20);
+                        player.setFoodLevel(20);
+                        player.setSaturation(10);
 
-                    player.teleport(getSpawnpoint(player));
-                    player.sendTitle(ChatColor.GREEN+"RESPAWNED","",0,10,10);
-                    Bukkit.getServer().getPluginManager().callEvent(new GameSpawnPlayerEvent(game, player));
-                    cancel();
-                    return;
+                        player.teleport(getSpawnpoint(player));
+                        player.sendTitle(ChatColor.GREEN+"RESPAWNED","",0,10,10);
+                        Bukkit.getServer().getPluginManager().callEvent(new GameSpawnPlayerEvent(game, player));
+                        cancel();
+                        return;
+                    }
+                    player.sendTitle(ChatColor.RED+"YOU DIED", ChatColor.YELLOW+"Respawn in "+secondsRemaining+"...", 0, 40, 0);
+                    secondsRemaining--;
                 }
-                player.sendTitle(ChatColor.RED+"YOU DIED", ChatColor.YELLOW+"Respawn in "+secondsRemaining+"...", 0, 40, 0);
-                secondsRemaining--;
-            }
-        };
-        respawnTimer.runTaskTimer(main, 0, 20);
+            };
+            respawnTimer.runTaskTimer(main, 0, 20);
+        } else {
+            player.sendTitle(ChatColor.RED+"YOU DIED", ChatColor.YELLOW+"Better luck next time!", 0, 40, 20);
+            addSpectator(player, (player.getLocation().getY() < 0));
+        }
+
     }
 
 

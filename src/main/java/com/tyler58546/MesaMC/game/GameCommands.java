@@ -10,7 +10,6 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class GameCommands implements CommandExecutor, TabCompleter {
 
@@ -68,7 +67,7 @@ public class GameCommands implements CommandExecutor, TabCompleter {
             }
             if (game.state != Game.gameState.WAITING) {
                 if (game.state == Game.gameState.RUNNING) {
-                    game.addSpectator(player);
+                    game.addSpectator(player, true);
                     sender.sendMessage(prefixedMessage("You are now spectating "+ChatColor.YELLOW+game.name));
                     return true;
                 }
