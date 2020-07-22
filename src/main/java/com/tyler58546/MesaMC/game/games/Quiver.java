@@ -37,7 +37,7 @@ public class Quiver extends Game {
 
 
     public Quiver(MesaMC main) {
-        super(main, GameType.QUIVER.id, GameType.QUIVER.name, new String[]{"quiver-floating-island"}, GameType.QUIVER);
+        super(main, GameType.QUIVER.id, GameType.QUIVER.name, new String[]{"quiver-floating-island", "quiver-ruins"}, GameType.QUIVER);
         description.add("Bows insta-kill.");
         description.add("You get one arrow every time you get a kill.");
         description.add("First to 20 kills wins the game.");
@@ -63,54 +63,6 @@ public class Quiver extends Game {
         return gameMap.getNextSpawnpoint(PLAYERS).location.toLocation(gameWorld);
     }
 
-    /*void updateScoreboard() {
-        //Reset all entries
-        try {
-            Set<String> allScores = scoreboard.getEntries();
-            if (allScores != null) {
-                if (allScores.size() > 0) {
-                    allScores.forEach((ent) -> {
-                        scoreboard.resetScores(ent);
-                    });
-                }
-            }
-        } catch (NullPointerException e) {
-            //err
-        }
-
-
-        //Add blank space
-        if (objective == null) Bukkit.getLogger().warning("objective is null");
-        objective.getScore(" ").setScore(4);
-        objective.getScore(ChatColor.YELLOW+""+ChatColor.BOLD+"Game").setScore(3);
-        objective.getScore("One in The Quiver").setScore(2);
-        objective.getScore("  ").setScore(1);
-        objective.getScore(ChatColor.YELLOW+""+ChatColor.BOLD+"Kills").setScore(0);
-
-        //Add player kills
-        if (kills != null && kills.size() > 0) {
-            final int[] i = {0};
-            Sort.entriesSortedByValues(kills).forEach(e -> {
-                UUID uuid = UUID.fromString(e.getKey());
-                i[0]--;
-                Player player = Bukkit.getPlayer(uuid);
-                Integer playerKills = e.getValue();
-                Score score = objective.getScore(playerKills+" "+ ChatColor.GREEN+player.getName());
-                score.setScore(i[0]);
-            });
-            objective.getScore("   ").setScore(i[0]-1);
-        } else {
-            objective.getScore(ChatColor.GRAY+""+ChatColor.ITALIC+"Waiting...").setScore(-1);
-        }
-
-        //Show the objective in the sidebar
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-
-        //Display scoreboard to players
-        players.forEach((player) -> {
-            player.setScoreboard(scoreboard);
-        });
-    }*/
 
     void resetInventory(Player player) {
 

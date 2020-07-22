@@ -27,6 +27,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -388,7 +389,8 @@ public abstract class Game implements Listener {
      */
     void loadMap() {
         try {
-            gameMap = WorldLoader.loadMap(maps[0], id+"_game");
+            String mapID = maps[ThreadLocalRandom.current().nextInt(maps.length)];
+            gameMap = WorldLoader.loadMap(mapID, id+"_game");
             gameWorld = gameMap.world;
             Bukkit.getServer().getPluginManager().callEvent(new GameMapLoadEvent(this));
         } catch (Exception e) {
