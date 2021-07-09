@@ -50,6 +50,16 @@ public enum GameType {
                 Statistic.LOSSES,
                 Statistic.DAMAGE_DEALT,
                 Statistic.DAMAGE_TAKEN
+    }),
+    SLAPAROO (
+            "Slaparoo",
+            "Slaparoo",
+            new Statistic[]{
+                Statistic.GAMES_PLAYED,
+                Statistic.KILLS,
+                Statistic.DEATHS,
+                Statistic.WINS,
+                Statistic.LOSSES
     })
     ;
 

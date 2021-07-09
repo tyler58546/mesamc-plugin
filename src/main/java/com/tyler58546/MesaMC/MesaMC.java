@@ -3,10 +3,7 @@ package com.tyler58546.MesaMC;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.tyler58546.MesaMC.game.*;
-import com.tyler58546.MesaMC.game.games.Bedwars;
-import com.tyler58546.MesaMC.game.games.Duels1v1;
-import com.tyler58546.MesaMC.game.games.Quiver;
-import com.tyler58546.MesaMC.game.games.SkywarsSolo;
+import com.tyler58546.MesaMC.game.games.*;
 import com.tyler58546.MesaMC.game.stats.StatisticsManager;
 import com.tyler58546.MesaMC.game.stats.StatsCommand;
 import com.tyler58546.MesaMC.hub.Hub;
@@ -74,10 +71,13 @@ public class MesaMC extends JavaPlugin implements PluginMessageListener {
                 games.add(new Duels1v1(main));
 
                 //Add skywars game
-                games.add(new SkywarsSolo(main));;
+                games.add(new SkywarsSolo(main));
 
                 //Add bedwars game
                 games.add(new Bedwars(main));
+
+                //Add slaparoo game
+                games.add(new Slaparoo(main));
             }
         });
         new BukkitRunnable() {
