@@ -34,7 +34,7 @@ public class Hub implements Listener {
         return Bukkit.getWorld(MesaMC.mainWorldName);
     }
 
-    static void renameItem(ItemStack item, String name) {
+    public static void renameItem(ItemStack item, String name) {
         ItemMeta im = item.getItemMeta();
         im.setDisplayName(name);
         im.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
@@ -80,7 +80,7 @@ public class Hub implements Listener {
     @EventHandler
     public final void onInteract(PlayerInteractEvent e) {
         if (e.getPlayer().getWorld() != getHubWorld()) return;
-        if (e.getAction() == Action.PHYSICAL) return;
+        if (e.getAction() == Action.PHYSICAL || e.getAction() == Action.LEFT_CLICK_AIR || e.getAction() == Action.LEFT_CLICK_BLOCK) return;
         ItemStack firstItem = e.getPlayer().getInventory().getItem(0);
         if (firstItem == null) return;
         if (firstItem.getType() != Material.COMPASS) return;

@@ -30,3 +30,7 @@ commands:
       USAGE: /<command>
     aliases:
       - stats
+  team:
+    description: Selects a team
+    usage: |
+      USAGE: /<command> [team]

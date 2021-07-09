@@ -12,6 +12,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -27,6 +28,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,6 +55,8 @@ public abstract class Game implements Listener {
     public Winner winner;
     public HashMap<String, Entity> npcs = new HashMap<>();
     public List<Location> playerPlacedBlocks = new ArrayList<>();
+    public HashMap<UUID, PlayerData> playerData = new HashMap<>();
+    public HashMap<Team, TeamData> teamData = new HashMap<>();
     public ArrayList<String> description = new ArrayList<>();
     public enum gameState {
         WAITING,
@@ -62,12 +66,17 @@ public abstract class Game implements Listener {
     }
     public gameState state = gameState.WAITING;
 
+    public Boolean useTeams = false;
+    public Team[] teams = {};
     public Boolean allowBreak = false;
     public Boolean allowPlace = false;
     public Boolean disableHunger = true;
     public Boolean allowInventoryMove = false;
+    public Boolean enableFallDamage = true;
     public GameMode gameMode = GameMode.SURVIVAL;
+    public Boolean showFinalKillMessage = false;
 
+    public ArrayList<BukkitRunnable> gameTimers = new ArrayList<>();
     private BukkitRunnable compassTimer;
 
     protected MesaMC main;
@@ -135,8 +144,29 @@ public abstract class Game implements Listener {
         players.add(player);
         player.teleport(lobbySpawn);
         resetPlayer(player);
+        player.getEnderChest().clear();
         giveLobbyItems(player);
         gameBroadcast(ChatColor.DARK_GRAY+"Join> "+ChatColor.GRAY+player.getName());
+        updateScoreboard();
+        if (useTeams) {
+            assignTeam(player);
+        }
+    }
+
+    public void assignTeam(Player player) {
+        Team smallestTeam = teams[0];
+        for (Team team : teams) {
+            if (getTeamMembers(team).size() < getTeamMembers(smallestTeam).size()) {
+                smallestTeam = team;
+            }
+        }
+        setTeam(player, smallestTeam);
+        player.sendMessage(ChatColor.BLUE+"Game> "+ChatColor.GRAY+"You joined "+smallestTeam.displayName);
+    }
+
+    public void setTeam(Player player, Team team) {
+        PlayerData data = getPlayerData(player);
+        data.team = team;
         updateScoreboard();
     }
 
@@ -157,6 +187,7 @@ public abstract class Game implements Listener {
         resetPlayer(player);
         players.remove(player);
         spectators.remove(player);
+        player.getEnderChest().clear();
         removePlayerFromWorld(player, false);
         gameBroadcast(ChatColor.DARK_GRAY+"Quit> "+ChatColor.GRAY+player.getName());
         if (getNonSpectators().size() <= 1 && state == gameState.RUNNING) {
@@ -188,6 +219,7 @@ public abstract class Game implements Listener {
      * @param player
      */
     void resetPlayer(Player player) {
+        player.closeInventory();
         player.setFlying(false);
         player.setAllowFlight(false);
         player.setHealth(20);
@@ -196,6 +228,10 @@ public abstract class Game implements Listener {
         player.getActivePotionEffects().clear();
         player.getEquipment().clear();
         player.getInventory().clear();
+        player.setItemOnCursor(new ItemStack(Material.AIR));
+        player.getOpenInventory().getTopInventory().clear();
+        PlayerData data = getPlayerData(player);
+        data.lastHitTime = 0;
         if (player.getWorld() == lobbyWorld) player.setGameMode(GameMode.ADVENTURE);
         else player.setGameMode(gameMode);
     }
@@ -227,6 +263,15 @@ public abstract class Game implements Listener {
         player.getInventory().clear();
 
         ItemMeta im;
+
+        //Team selector
+        if (useTeams) {
+            ItemStack teamSelector = new ItemStack(Material.NETHER_STAR);
+            im = teamSelector.getItemMeta();
+            im.setDisplayName(ChatColor.YELLOW+"Team Selector");
+            teamSelector.setItemMeta(im);
+            player.getInventory().setItem(0, teamSelector);
+        }
 
         //Start game
         ItemStack startItem = new ItemStack(Material.LIME_CONCRETE);
@@ -263,6 +308,7 @@ public abstract class Game implements Listener {
         players.forEach((player) -> {
             player.teleport(getSpawnpoint(player));
             resetPlayer(player);
+            player.getEnderChest().clear();
             addStat(Statistic.GAMES_PLAYED, player);
         });
 
@@ -315,6 +361,8 @@ public abstract class Game implements Listener {
      * @param moveToLobby Whether to move the player to the game lobby or send them to the main world.
      */
     void removePlayerFromWorld(Player player, Boolean moveToLobby) {
+        playerData.remove(player.getUniqueId());
+        player.getEnderChest().clear();
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         resetPlayer(player);
         if(moveToLobby) {
@@ -333,6 +381,9 @@ public abstract class Game implements Listener {
         players.forEach(player -> {
             spectators.remove(player);
             removePlayerFromWorld(player, moveToLobby);
+            if (moveToLobby) {
+                assignTeam(player);
+            }
         });
     }
 
@@ -340,16 +391,23 @@ public abstract class Game implements Listener {
      * Ends the game, showing the winner. Players will be teleported to the lobby after 10 seconds.
      */
     public void stop() {
+        for (BukkitRunnable timer : gameTimers) {
+            timer.cancel();
+        }
+        gameTimers = new ArrayList<>();
         state = gameState.FINISHED;
         if (winner == null) winner = new Winner();
         players.forEach(player -> {
             if (winner.player != null) {
                 player.sendTitle(ChatColor.YELLOW+winner.player.getName(), ChatColor.YELLOW+"won the game!", 0, 200, 5);
+                player.sendMessage(ChatColor.BLUE+"Game> "+ChatColor.YELLOW+winner.player.getName()+ChatColor.YELLOW+" won the game!");
                 if (winner.player == player) addStat(Statistic.WINS, player);
                 else addStat(Statistic.LOSSES, player);
             } else if (winner.team != null) {
                 player.sendTitle(winner.team.displayName+" Team", ChatColor.YELLOW+"won the game!", 0, 200, 5);
-                // TODO add win stats when team wins
+                player.sendMessage(ChatColor.BLUE+"Game> "+winner.team.displayName+" Team"+ChatColor.YELLOW+" won the game!");
+                if (getPlayerData(player).team == winner.team) addStat(Statistic.WINS, player);
+                else addStat(Statistic.LOSSES, player);
             } else {
                 player.sendTitle(ChatColor.RED+"GAME OVER", "", 0, 200, 5);
             }
@@ -366,6 +424,8 @@ public abstract class Game implements Listener {
             return;
         }
         Bukkit.getScheduler().scheduleSyncDelayedTask(main, () -> {
+            teamData = new HashMap<Team, TeamData>();
+            playerData = new HashMap<UUID, PlayerData>();
             state = gameState.WAITING;
             removePlayers(true);
             loadMap();
@@ -392,6 +452,7 @@ public abstract class Game implements Listener {
             String mapID = maps[ThreadLocalRandom.current().nextInt(maps.length)];
             gameMap = WorldLoader.loadMap(mapID, id+"_game");
             gameWorld = gameMap.world;
+            gameWorld.setTime(6000);
             Bukkit.getServer().getPluginManager().callEvent(new GameMapLoadEvent(this));
         } catch (Exception e) {
             e.printStackTrace();
@@ -414,17 +475,26 @@ public abstract class Game implements Listener {
 
     protected void handleDeath(Player player, String deathMessage) {
         addStat(Statistic.DEATHS, player);
-        gameBroadcast(deathMessage);
+        if (!showFinalKillMessage) {
+            gameBroadcast(deathMessage);
+        }
         resetPlayer(player);
         player.setGameMode(GameMode.SPECTATOR);
         if (player.getLocation().getY() < 0)  player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));
         Game game = this;
         if (canRespawn(player)) {
+            if (showFinalKillMessage) {
+                gameBroadcast(deathMessage);
+            }
+            Bukkit.getServer().getPluginManager().callEvent(new GameDeathEvent(this, player, false));
             BukkitRunnable respawnTimer = new BukkitRunnable() {
                 int secondsRemaining = respawnDelay;
                 @Override
                 public void run() {
-                    if (state != gameState.RUNNING) return;
+                    if (state != gameState.RUNNING) {
+                        cancel();
+                        return;
+                    }
                     if (secondsRemaining <= 0) {
                         player.setGameMode(game.gameMode);
                         player.setHealth(20);
@@ -443,10 +513,14 @@ public abstract class Game implements Listener {
             };
             respawnTimer.runTaskTimer(main, 0, 20);
         } else {
+            if (showFinalKillMessage) {
+                gameBroadcast(deathMessage + ChatColor.AQUA + ChatColor.BOLD + " FINAL KILL!");
+            }
             player.sendTitle(ChatColor.RED+"YOU DIED", ChatColor.YELLOW+"Better luck next time!", 0, 40, 20);
             addSpectator(player, (player.getLocation().getY() < 0));
+            Bukkit.getServer().getPluginManager().callEvent(new GameDeathEvent(this, player, true));
         }
-
+        updateScoreboard();
     }
 
 
@@ -519,8 +593,46 @@ public abstract class Game implements Listener {
         if (enableStats) main.statisticsManager.addGameStatistic(gameType, stat, player);
     }
 
+    protected PlayerData getPlayerData(Player player) {
+        if (playerData.containsKey(player.getUniqueId())) {
+            return playerData.get(player.getUniqueId());
+        } else {
+            PlayerData newPlayerData = createPlayerData(player);
+            playerData.put(player.getUniqueId(), newPlayerData);
+            return newPlayerData;
+        }
+    }
+
+    protected PlayerData createPlayerData(Player player) {
+        return new PlayerData();
+    }
+
+    protected TeamData getTeamData(Team team) {
+        if (teamData.containsKey(team)) {
+            return teamData.get(team);
+        } else {
+            TeamData newTeamData = createTeamData(team);
+            teamData.put(team, newTeamData);
+            return newTeamData;
+        }
+    }
+
+    protected TeamData createTeamData(Team team) {
+        return new TeamData();
+    }
+
+    public ArrayList<Player> getTeamMembers(Team team) {
+        ArrayList<Player> members = new ArrayList<>();
+        for (Player player : players) {
+            if (!spectators.contains(player) && getPlayerData(player).team == team) {
+                members.add(player);
+            }
+        }
+        return members;
+    }
+
     @EventHandler
-    public final void onBreak(BlockBreakEvent e) {
+    public void onBreak(BlockBreakEvent e) {
         World world = e.getBlock().getWorld();
         if (world == lobbyWorld || spectators.contains(e.getPlayer())) {
             e.setCancelled(true);
@@ -563,13 +675,14 @@ public abstract class Game implements Listener {
         if (e.getEntity() instanceof Player) {
             Player player = (Player)e.getEntity();
             player.setFoodLevel(20);
-            player.setSaturation(10);
+            player.setSaturation(0);
         }
 
     }
 
     @EventHandler
     public final void onDamage(EntityDamageEvent e) {
+        EntityDamageEvent.DamageCause cause = e.getCause();
         if (e.getEntity() instanceof Player) {
             Player player = (Player) e.getEntity();
             if (spectators.contains(player)) {
@@ -584,6 +697,17 @@ public abstract class Game implements Listener {
         if (e.getEntity().getWorld() == gameWorld) {
             if (e.getEntity() instanceof Player) {
                 Player player = (Player) e.getEntity();
+
+                if (cause == EntityDamageEvent.DamageCause.VOID) {
+                    e.setDamage(player.getHealth() + 1);
+                }
+
+                if (cause == EntityDamageEvent.DamageCause.FALL && !enableFallDamage) {
+                    e.setCancelled(true);
+                    return;
+                }
+
+                // Handle player death
                 if (player.getHealth() - e.getFinalDamage() <= 0) {
                     for (int i = 0; i < ((int) Math.round(player.getHealth())); i++) {
                         addStat(Statistic.DAMAGE_TAKEN, player);
@@ -592,9 +716,28 @@ public abstract class Game implements Listener {
                     player.setHealth(20);
                     player.setFoodLevel(20);
                     player.setSaturation(10);
-                    EntityDamageEvent.DamageCause cause = e.getCause();
                     if (cause != EntityDamageEvent.DamageCause.ENTITY_ATTACK && cause != EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK && cause != EntityDamageEvent.DamageCause.MAGIC && cause != EntityDamageEvent.DamageCause.PROJECTILE) {
-                        handleDeath(player, ChatColor.BLUE+"Death> "+ChatColor.YELLOW+player.getName()+ChatColor.GRAY+" killed by "+ChatColor.YELLOW+WordUtils.capitalizeFully(cause.toString()));
+                        PlayerData data = getPlayerData(player);
+                        if (System.currentTimeMillis() - data.lastHitTime < 15000) {
+                            String message;
+                            switch (cause) {
+                                case FALL:
+                                    message = " fell from a high place while fighting ";
+                                    break;
+                                case VOID:
+                                    message = " was knocked into the void by ";
+                                    break;
+                                default:
+                                    message = " died while fighting ";
+                                    break;
+                            }
+                            handleDeath(player, ChatColor.BLUE+"Death> "+ChatColor.YELLOW+player.getName()+ChatColor.GRAY+ message +ChatColor.YELLOW + data.lastHitPlayer.getName());
+                            GameCombatKillEvent killEvent = new GameCombatKillEvent(this, data.lastHitPlayer, player, cause.toString());
+                            Bukkit.getServer().getPluginManager().callEvent(killEvent);
+                            addStat(Statistic.KILLS, killEvent.killer);
+                        } else {
+                            handleDeath(player, ChatColor.BLUE+"Death> "+ChatColor.YELLOW+player.getName()+ChatColor.GRAY+" killed by "+ChatColor.YELLOW+WordUtils.capitalizeFully(cause.toString()));
+                        }
                     }
                 } else {
                     for (int i = 0; i < ((int) Math.round(e.getFinalDamage())); i++) {
@@ -684,6 +827,10 @@ public abstract class Game implements Listener {
                     }
                 }
 
+                PlayerData data = getPlayerData((Player) e.getEntity());
+                data.lastHitPlayer = killer.get();
+                data.lastHitTime = System.currentTimeMillis();
+
                 if (!didDie) return;
 
                 weapon.set(WordUtils.capitalizeFully(weapon.get()));
@@ -698,7 +845,6 @@ public abstract class Game implements Listener {
                 } else {
                     handleDeath(killEvent.killed,ChatColor.BLUE+"Death> "+ChatColor.YELLOW+killEvent.killed.getName()+ChatColor.GRAY+" killed by "+ChatColor.YELLOW+e.getCause().toString());
                 }
-
             }
         }
     }
@@ -724,9 +870,14 @@ public abstract class Game implements Listener {
     public final void onInteraction(PlayerInteractEvent e) {
         Player player = e.getPlayer();
         if (player.getWorld() == lobbyWorld) {
-            if (e.getAction() == Action.PHYSICAL) return;
+            if (e.getAction() == Action.PHYSICAL || e.getAction() == Action.LEFT_CLICK_AIR || e.getAction() == Action.LEFT_CLICK_BLOCK) return;
             e.setCancelled(true);
             switch (player.getInventory().getHeldItemSlot()) {
+                case 0:
+                    if (useTeams) {
+                        Bukkit.getServer().dispatchCommand(player, "team");
+                    }
+                    break;
                 case 7:
                     Bukkit.getServer().dispatchCommand(player, "start");
                     break;
@@ -781,7 +932,25 @@ public abstract class Game implements Listener {
         removePlayer(e.getPlayer());
     }
 
+    @EventHandler
+    public final void onItemDrop(PlayerDropItemEvent e) {
+        if (e.getPlayer().getWorld() == lobbyWorld) {
+            e.setCancelled(true);
+        }
+        if (e.getPlayer().getWorld() == gameWorld && !allowInventoryMove) {
+            e.setCancelled(true);
+        }
+        if (spectators.contains(e.getPlayer())) {
+            e.setCancelled(true);
+        }
+    }
 
+    @EventHandler
+    public final void onBlockGrow(BlockGrowEvent e) {
+        if (e.getBlock().getWorld() == lobbyWorld || e.getBlock().getWorld() == gameWorld) {
+            e.setCancelled(true);
+        }
+    }
 
 
 }

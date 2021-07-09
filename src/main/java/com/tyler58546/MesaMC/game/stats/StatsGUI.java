@@ -20,9 +20,10 @@ public class StatsGUI extends CustomGUI {
     static HashMap<Integer, ItemStack> getItems(MesaMC main, Player player) {
         HashMap<Integer, ItemStack> output = new HashMap<>();
         output.put(13, new StatsItem(Material.NETHER_STAR, null, player, main.statisticsManager));
-        output.put(29, new StatsItem(Material.BOW, GameType.QUIVER, player, main.statisticsManager));
-        output.put(31, new StatsItem(Material.IRON_SWORD, GameType.DUELS, player, main.statisticsManager));
-        output.put(33, new StatsItem(Material.ENDER_EYE, GameType.SKYWARS, player, main.statisticsManager));
+        output.put(28, new StatsItem(Material.BOW, GameType.QUIVER, player, main.statisticsManager));
+        output.put(30, new StatsItem(Material.IRON_SWORD, GameType.DUELS, player, main.statisticsManager));
+        output.put(32, new StatsItem(Material.ENDER_EYE, GameType.SKYWARS, player, main.statisticsManager));
+        output.put(34, new StatsItem(Material.RED_BED, GameType.BEDWARS, player, main.statisticsManager));
         return output;
     }
 }

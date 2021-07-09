@@ -1,5 +1,6 @@
 package com.tyler58546.MesaMC.hub;
 
+import com.tyler58546.MesaMC.MesaMC;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -16,7 +17,7 @@ public class HubGUIItem extends ItemStack {
     public Player player;
     public HubGUIClickActions clickActions;
 
-    public HubGUIItem(Material m, String name, String description[], int slot, HubGUIClickActions clickActions) {
+    public HubGUIItem(Material m, String name, String[] description, int slot, HubGUIClickActions clickActions) {
         super(m);
         this.slot = slot;
         this.clickActions = clickActions;
@@ -60,6 +61,7 @@ public class HubGUIItem extends ItemStack {
             @Override
             public void onLeftClick(Player player) {
                 Bukkit.getServer().dispatchCommand(player, leftClickCommand);
+//                player.closeInventory();
             }
 
             @Override
@@ -87,6 +89,34 @@ public class HubGUIItem extends ItemStack {
             @Override
             public void onLeftClick(Player player) {
                 player.sendMessage(leftClickMessage);
+            }
+
+            @Override
+            public void onRightClick(Player player) {
+
+            }
+        });
+    }
+
+    public static HubGUIItem createHubGUIServerItem(MesaMC main, Material m, String name, String description, int slot, String leftClickServer, String leftClickAction) {
+        String[] splitDesc = new String[]{};
+        if (description != null) {
+            splitDesc = description.split("-n-");
+        }
+        return new HubGUIItem(m, name, splitDesc, slot, new HubGUIClickActions() {
+            @Override
+            public String getLeftClickAction() {
+                return leftClickAction;
+            }
+
+            @Override
+            public String getRightClickAction() {
+                return null;
+            }
+
+            @Override
+            public void onLeftClick(Player player) {
+                main.sendPlayerToServer(player, leftClickServer);
             }
 
             @Override

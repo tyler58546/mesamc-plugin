@@ -6,6 +6,7 @@ import com.tyler58546.MesaMC.game.event.*;
 import com.tyler58546.MesaMC.game.stats.Statistic;
 import com.tyler58546.MesaMC.util.Sort;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
@@ -43,6 +44,7 @@ public class Quiver extends Game {
         description.add("First to 20 kills wins the game.");
         allowInventoryMove = true;
         allowPlace = true;
+        enableFallDamage = false;
     }
 
     TreeMap<String, Integer> kills = new TreeMap<String, Integer>();
@@ -101,7 +103,7 @@ public class Quiver extends Game {
         shopItems.add(new ShopItem(13, Material.CROSSBOW, "Crossbow", 1, new ItemStack(Material.EMERALD, 3), currencyName, true));
         shopItems.add(new ShopItem(14, Material.GOLDEN_APPLE, ChatColor.AQUA+"Golden Apple", 1, new ItemStack(Material.EMERALD, 2), currencyName, true));
         shopItems.add(new ShopItem(15, Material.SHEARS, "Shears", 1, new ItemStack(Material.EMERALD, 1), "Emerald", true));
-        shopItems.add(new ShopItem(16, Material.SKELETON_SPAWN_EGG, "Skeleton Spawn Egg", 1, new ItemStack(Material.EMERALD, 6), currencyName, true));
+        shopItems.add(new ShopItem(16, Material.SKELETON_SPAWN_EGG, "Skeleton Spawn Egg", 1, new ItemStack(Material.EMERALD, 15), currencyName, true));
         ShopGUI shopGUI = new ShopGUI(main, "Emerald Shop", 3, shopItems, player);
         shopGUI.open(player);
     }
@@ -144,6 +146,7 @@ public class Quiver extends Game {
             }
         };
         emeraldTimer.runTaskTimer(main, 20, emeraldTimerDelay);
+        gameTimers.add(emeraldTimer);
         updateScoreboard();
     }
 
@@ -285,11 +288,12 @@ public class Quiver extends Game {
             } else if (e.getHand() == EquipmentSlot.OFF_HAND) {
                 return;
             }
-            Entity i = e.getPlayer().getWorld().spawnEntity(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), EntityType.SKELETON);
-            i.setCustomName(ChatColor.YELLOW+e.getPlayer().getName()+"'s Skeleton");
-            i.setCustomNameVisible(true);
-            ((Skeleton) i).getEquipment().setHelmet(new ItemStack(Material.CHAINMAIL_HELMET));
-            npcs.put("skeleton_"+e.getPlayer().getUniqueId()+"_"+i.getUniqueId(), i);
+            Skeleton skeleton = (Skeleton) e.getPlayer().getWorld().spawnEntity(e.getClickedBlock().getLocation().add(0.5, 1, 0.5), EntityType.SKELETON);
+            skeleton.setCustomName(ChatColor.YELLOW+e.getPlayer().getName()+"'s Skeleton");
+            skeleton.setCustomNameVisible(true);
+            skeleton.getEquipment().setHelmet(new ItemStack(Material.CHAINMAIL_HELMET));
+            skeleton.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(1);
+            npcs.put("skeleton_"+e.getPlayer().getUniqueId()+"_"+skeleton.getUniqueId(), skeleton);
         }
     }
 

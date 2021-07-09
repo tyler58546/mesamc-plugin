@@ -113,7 +113,34 @@ public class GameCommands implements CommandExecutor, TabCompleter {
             }
             return true;
         }
-
+        if (command.getName().equalsIgnoreCase("team")) {
+            Game currentGame = main.getCurrentGame(player);
+            if (currentGame != null && currentGame.useTeams) {
+                if (args.length == 0) {
+                    new TeamSelectorGUI(main, player).open(player);
+                    return true;
+                }
+                if (args.length != 1) {
+                    return false;
+                }
+                try {
+                    Team selectedTeam = Team.valueOf(args[0].toUpperCase());
+                    if (selectedTeam == Team.PLAYERS || selectedTeam == Team.CUSTOM || selectedTeam == Team.SPECTATORS) {
+                        sender.sendMessage(gamePrefixedMessage("Invalid team."));
+                        return true;
+                    }
+                    currentGame.setTeam(player, selectedTeam);
+                    sender.sendMessage(gamePrefixedMessage("You joined "+selectedTeam.displayName));
+                    return true;
+                } catch (IllegalArgumentException e) {
+                    sender.sendMessage(gamePrefixedMessage("Invalid team."));
+                    return true;
+                }
+            } else {
+                sender.sendMessage(gamePrefixedMessage("You are not in a supported game."));
+                return true;
+            }
+        }
 
         return false;
 

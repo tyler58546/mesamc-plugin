@@ -1,6 +1,9 @@
 package com.tyler58546.MesaMC;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import com.tyler58546.MesaMC.game.*;
+import com.tyler58546.MesaMC.game.games.Bedwars;
 import com.tyler58546.MesaMC.game.games.Duels1v1;
 import com.tyler58546.MesaMC.game.games.Quiver;
 import com.tyler58546.MesaMC.game.games.SkywarsSolo;
@@ -11,11 +14,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 
-public class MesaMC extends JavaPlugin {
+public class MesaMC extends JavaPlugin implements PluginMessageListener {
 
     public static String mainWorldName = "hthm";
     public static String serverName = "MesaMC";
@@ -41,6 +45,9 @@ public class MesaMC extends JavaPlugin {
         this.getCommand("start").setExecutor(cmdHandler);
         this.getCommand("start").setTabCompleter(cmdHandler);
 
+        this.getCommand("team").setExecutor(cmdHandler);
+        this.getCommand("team").setTabCompleter(cmdHandler);
+
         this.getCommand("leave").setExecutor(cmdHandler);
         this.getCommand("leave").setTabCompleter(cmdHandler);
 
@@ -53,6 +60,10 @@ public class MesaMC extends JavaPlugin {
         Bukkit.getServer().getPluginManager().registerEvents(new Hub(this), this);
 
         MesaMC main = this;
+
+        this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        this.getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", this);
+
         getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable(){
             public void run(){
                 defaultWorld = Bukkit.getWorld(mainWorldName);
@@ -63,7 +74,10 @@ public class MesaMC extends JavaPlugin {
                 games.add(new Duels1v1(main));
 
                 //Add skywars game
-                games.add(new SkywarsSolo(main));
+                games.add(new SkywarsSolo(main));;
+
+                //Add bedwars game
+                games.add(new Bedwars(main));
             }
         });
         new BukkitRunnable() {
@@ -75,6 +89,8 @@ public class MesaMC extends JavaPlugin {
     }
 
     public void onDisable() {
+        this.getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+        this.getServer().getMessenger().unregisterIncomingPluginChannel(this);
         statisticsManager.saveStats();
         games.forEach(game -> {
             game.shutdown();
@@ -127,4 +143,13 @@ public class MesaMC extends JavaPlugin {
         Bukkit.getServer().dispatchCommand(player, cmd);
     }
 
+    @Override
+    public void onPluginMessageReceived(String channel, Player player, byte[] message) { }
+
+    public void sendPlayerToServer(Player player, String server) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF("Connect");
+        out.writeUTF(server);
+        player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+    }
 }

@@ -38,6 +38,18 @@ public enum GameType {
                 Statistic.LOSSES,
                 Statistic.DAMAGE_DEALT,
                 Statistic.DAMAGE_TAKEN
+    }),
+    BEDWARS (
+            "Bedwars",
+            "Bedwars",
+            new Statistic[]{
+                Statistic.GAMES_PLAYED,
+                Statistic.KILLS,
+                Statistic.DEATHS,
+                Statistic.WINS,
+                Statistic.LOSSES,
+                Statistic.DAMAGE_DEALT,
+                Statistic.DAMAGE_TAKEN
     })
     ;
 

@@ -20,6 +20,7 @@ public class CustomGUI implements Listener {
     protected final Inventory inv;
     public HashMap<Integer, ItemStack> items;
     public MesaMC main;
+    public String title;
 
     public void onItemClick(int slot, ItemStack item, Player player) {}
 
@@ -31,6 +32,7 @@ public class CustomGUI implements Listener {
         inv = Bukkit.createInventory(null, rows*9, title);
         this.items = items;
         this.main = main;
+        this.title = title;
         initializeItems();
         Bukkit.getServer().getPluginManager().registerEvents(this, main);
     }
