@@ -29,7 +29,7 @@ public class HubCompassGUI extends HubGUI {
         items.add(HubGUIItem.createHubGUICommandItem(Material.MAGMA_CREAM, "Gym", null, 23, "warp gym", "teleport"));
 
 //        items.add(HubGUIItem.createHubGUIMessageItem(Material.IRON_PICKAXE, "Survival", "1.17 survival with minimal plugins.", 37, ChatColor.BLUE+"Portal> "+ChatColor.GRAY+"To play survival, type "+ChatColor.YELLOW+"/server mmc117", "play"));
-        items.add(HubGUIItem.createHubGUIServerItem(main, Material.IRON_PICKAXE, "Survival", "1.17 survival with minimal plugins.", 39, "mmc117", "join"));
+        items.add(HubGUIItem.createHubGUIServerItem(main, Material.IRON_PICKAXE, "Survival", "1.18 survival with minimal plugins.", 39, "mmc118", "join"));
         items.add(HubGUIItem.createHubGUICommandItem(Material.BOW, "One in the Quiver", "Bows insta-kill-n-You get one arrow every time you get a kill.-n-First to 20 kills wins the game.", 40, "play Quiver", "play"));
         items.add(HubGUIItem.createHubGUICommandItem(Material.IRON_SWORD, "Duels "+ChatColor.GRAY+"(1v1)", "Fight to the death!-n-Defeat your opponent to win.-n-Attack cooldowns are disabled.", 41, "play Duels1v1", "play"));
         items.add(HubGUIItem.createHubGUICommandItem(Material.ENDER_EYE, "Skywars "+ChatColor.GRAY+"(Solo)", "Each player starts on their own floating island.-n-Collect loot from chests and fight other players.-n-Last person standing wins.", 48, "play SkywarsSolo", "play"));

@@ -15,7 +15,7 @@ public class HubServerMenuGUI extends HubGUI {
     }
     static List<HubGUIItem> getItems(MesaMC main) {
         List<HubGUIItem> output = new ArrayList<HubGUIItem>();
-        output.add(HubGUIItem.createHubGUIMessageItem(Material.DIAMOND, "Discord", "Join us on Discord!", 13, ChatColor.WHITE+""+ChatColor.BOLD+"JOIN US ON DISCORD > "+ChatColor.BLUE+""+ChatColor.UNDERLINE+"https://discord.gg/Fgn5FkZ", "get invite link"));
+        output.add(HubGUIItem.createHubGUIMessageItem(Material.DIAMOND, "Discord", "Join us on Discord!", 13, ChatColor.WHITE+""+ChatColor.BOLD+"JOIN US ON DISCORD > "+ChatColor.BLUE+""+ChatColor.UNDERLINE+"https://discord.gg/4EWS6zs7Fp", "get invite link"));
         return output;
     }
 

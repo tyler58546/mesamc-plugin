@@ -34,7 +34,7 @@ public class Bedwars extends Game {
     BukkitRunnable emeraldTimer;
 
     public Bedwars(MesaMC main) {
-        super(main, GameType.BEDWARS.id, GameType.BEDWARS.name, new String[]{"bedwars1"}, GameType.BEDWARS);
+        super(main, GameType.BEDWARS.id, GameType.BEDWARS.name, new String[]{"bedwars1", "bedwars2"}, GameType.BEDWARS);
         description.add("You can respawn until your bed is broken.");
         description.add("Purchase blocks to protect your bed.");
         description.add("Destroy your opponent's bed and kill them to win.");
