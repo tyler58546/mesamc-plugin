@@ -43,7 +43,7 @@ public class ShopItem extends ItemStack {
     public boolean alreadyPurchased() {
         if (player.getInventory().contains(getType()) || player.getInventory().getItemInOffHand().getType() == getType()) return true;
         for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (getType() == item.getType()) return true;
+            if (item != null && getType() == item.getType()) return true;
         }
         return false;
     }
