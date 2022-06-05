@@ -60,6 +60,16 @@ public enum GameType {
                 Statistic.DEATHS,
                 Statistic.WINS,
                 Statistic.LOSSES
+    }),
+    BATTLE_ROYALE (
+            "BattleRoyale",
+            "Battle Royale",
+            new Statistic[]{
+                    Statistic.GAMES_PLAYED,
+                    Statistic.KILLS,
+                    Statistic.DEATHS,
+                    Statistic.WINS,
+                    Statistic.LOSSES,
     })
     ;
 

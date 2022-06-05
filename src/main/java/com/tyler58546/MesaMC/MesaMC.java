@@ -77,7 +77,10 @@ public class MesaMC extends JavaPlugin implements PluginMessageListener {
                 games.add(new Bedwars(main));
 
                 //Add slaparoo game
-                games.add(new Slaparoo(main));
+//                games.add(new Slaparoo(main));
+
+                //Add br game
+                games.add(new BattleRoyale(main));
             }
         });
         new BukkitRunnable() {

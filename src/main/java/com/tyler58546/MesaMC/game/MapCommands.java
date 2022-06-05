@@ -60,7 +60,7 @@ public class MapCommands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(prefixedMessage("Creating map..."));
                 World newWorld;
                 try {
-                    newWorld = WorldLoader.createWorld("editor_"+args[1]);
+                    newWorld = WorldLoader.createWorld("editor_"+args[1], WorldType.FLAT);
                     GameMap newMap = new GameMap(null, args[1], null, null, false, null, newWorld);
                     main.editorMaps.add(newMap);
                     player.teleport(new Location(newWorld, 0.5, 10, 0.5));

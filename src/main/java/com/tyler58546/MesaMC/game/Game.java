@@ -17,6 +17,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.projectiles.ProjectileSource;
@@ -75,6 +76,7 @@ public abstract class Game implements Listener {
     public Boolean enableFallDamage = true;
     public GameMode gameMode = GameMode.SURVIVAL;
     public Boolean showFinalKillMessage = false;
+    public Boolean dropItemsOnDeath = false;
 
     public ArrayList<BukkitRunnable> gameTimers = new ArrayList<>();
     private BukkitRunnable compassTimer;
@@ -304,16 +306,18 @@ public abstract class Game implements Listener {
 
         spectators = new ArrayList<>();
 
+        state = gameState.STARTING;
+
         //Teleport players to the game
         players.forEach((player) -> {
             player.teleport(getSpawnpoint(player));
             resetPlayer(player);
             player.getEnderChest().clear();
             addStat(Statistic.GAMES_PLAYED, player);
+            Bukkit.getServer().getPluginManager().callEvent(new GameSpawnPlayerEvent(this, player));
         });
 
         //Start countdown
-        state = gameState.STARTING;
         updateScoreboard();
         gameBroadcast(ChatColor.BLUE+""+ChatColor.BOLD+"=================================");
         gameBroadcast(ChatColor.AQUA+"Game - "+ChatColor.YELLOW+ChatColor.BOLD+name);
@@ -381,7 +385,7 @@ public abstract class Game implements Listener {
         players.forEach(player -> {
             spectators.remove(player);
             removePlayerFromWorld(player, moveToLobby);
-            if (moveToLobby) {
+            if (moveToLobby && useTeams) {
                 assignTeam(player);
             }
         });
@@ -449,8 +453,12 @@ public abstract class Game implements Listener {
      */
     void loadMap() {
         try {
-            String mapID = maps[ThreadLocalRandom.current().nextInt(maps.length)];
-            gameMap = WorldLoader.loadMap(mapID, id+"_game");
+            if (maps == null) {
+                gameMap = WorldLoader.createEmptyMap(id+"_game");
+            } else {
+                String mapID = maps[ThreadLocalRandom.current().nextInt(maps.length)];
+                gameMap = WorldLoader.loadMap(mapID, id+"_game");
+            }
             gameWorld = gameMap.world;
             gameWorld.setTime(6000);
             Bukkit.getServer().getPluginManager().callEvent(new GameMapLoadEvent(this));
@@ -478,6 +486,17 @@ public abstract class Game implements Listener {
         if (!showFinalKillMessage) {
             gameBroadcast(deathMessage);
         }
+
+        if (dropItemsOnDeath) {
+            Inventory inv = player.getInventory();
+            Location loc = player.getLocation();
+            for (ItemStack item : inv.getContents()) {
+                if (item != null) {
+                    loc.getWorld().dropItemNaturally(loc, item.clone());
+                }
+            }
+        }
+
         resetPlayer(player);
         player.setGameMode(GameMode.SPECTATOR);
         if (player.getLocation().getY() < 0)  player.teleport(gameMap.getNextSpawnpoint(Team.SPECTATORS).location.toLocation(gameWorld));

@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class WorldLoader {
-    public static World createWorld(String name) throws IOException {
+    public static World createWorld(String name, WorldType type) throws IOException {
 
 
         /*if (source != null) {
@@ -29,7 +29,7 @@ public class WorldLoader {
             }
         }*/
         WorldCreator worldCreator = new WorldCreator(name);
-        worldCreator.type(WorldType.FLAT)
+        worldCreator.type(type)
                 .environment(World.Environment.NORMAL)
                 .generateStructures(false);
         World newWorld = worldCreator.createWorld();
@@ -41,6 +41,21 @@ public class WorldLoader {
         newWorld.setGameRule(GameRule.DO_FIRE_TICK, false);
         return newWorld;
 
+    }
+
+    public static GameMap createEmptyMap(String name) {
+        GameMap output = new GameMap(null, null, "Minecraft", "Mojang", false, new ArrayList<SpawnPoint>(), null);
+        World og  = Bukkit.getServer().getWorld(name);
+        if (og != null) {
+            Bukkit.unloadWorld(og, false);
+            deleteFolder(new File(name));
+        }
+        try {
+            output.world = createWorld(name, WorldType.NORMAL);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return output;
     }
 
     /**
@@ -78,7 +93,7 @@ public class WorldLoader {
         }
 
         try {
-            output.world = createWorld(name);
+            output.world = createWorld(name, WorldType.FLAT);
         } catch (IOException e) {
             e.printStackTrace();
         }

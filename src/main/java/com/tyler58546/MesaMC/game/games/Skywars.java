@@ -9,6 +9,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -175,8 +176,8 @@ public abstract class Skywars extends Game {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntDamage(EntityDamageEvent e) {
-        if (e.getEntity().getWorld() != gameWorld) return;
-        if (e.isCancelled() && getNonSpectators().size() <= 1) {
+        if (e.getEntity().getWorld() != gameWorld || e.getEntityType() != EntityType.PLAYER) return;
+        if (!e.isCancelled() && getNonSpectators().size() <= 1) {
             if (getNonSpectators().size() > 0) {
                 winner = new Winner(getNonSpectators().get(0));
             }
