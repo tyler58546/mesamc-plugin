@@ -34,7 +34,7 @@ public class HubCompassGUI extends HubGUI {
         items.add(HubGUIItem.createHubGUICommandItem(Material.IRON_SWORD, "Duels "+ChatColor.GRAY+"(1v1)", "Fight to the death!-n-Defeat your opponent to win.-n-Attack cooldowns are disabled.", 41, "play Duels1v1", "play"));
         items.add(HubGUIItem.createHubGUICommandItem(Material.ENDER_EYE, "Skywars "+ChatColor.GRAY+"(Solo)", "Each player starts on their own floating island.-n-Collect loot from chests and fight other players.-n-Last person standing wins.", 48, "play SkywarsSolo", "play"));
         items.add(HubGUIItem.createHubGUICommandItem(Material.RED_BED, "Bedwars", "You can respawn until your bed is broken.-n-Purchase blocks to protect your bed.-n-Destroy your opponent's bed and kill them to win.", 49, "play Bedwars", "play"));
-        items.add(HubGUIItem.createHubGUICommandItem(Material.DIAMOND_SWORD, "Battle Royale", "like fortnite but butter", 50, "play BattleRoyale", "play"));
+        items.add(HubGUIItem.createHubGUICommandItem(Material.DIAMOND_SWORD, "Battle Royale", "like fortnite but better", 50, "play BattleRoyale", "play"));
 
         return items;
     }
